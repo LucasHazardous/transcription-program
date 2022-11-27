@@ -11,14 +11,13 @@ HEADERS = {
     "authorization": auth_key
 }
 
-AUDIO_FILENAME = "output.wav"
 FRAMES_BUFFER = 3200
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 16000
 
 
-def listenAudio(time):
+def listenAudio(time, filename):
     p = pyaudio.PyAudio()
     stream = p.open(rate=RATE, channels=CHANNELS, format=FORMAT,
                     frames_per_buffer=FRAMES_BUFFER, input=True)
@@ -34,7 +33,7 @@ def listenAudio(time):
     stream.close()
     p.terminate()
 
-    obj = wave.open(AUDIO_FILENAME, "wb")
+    obj = wave.open(filename, "wb")
 
     obj.setnchannels(CHANNELS)
     obj.setsampwidth(p.get_sample_size(FORMAT))
@@ -44,12 +43,12 @@ def listenAudio(time):
     obj.close()
 
 
-def transcribe():
+def transcribe(filename):
     def stage(i):
         printProgressBar(i, 4, "Transcribing:")
 
     uploadRes = requests.post(
-        UPLOAD, headers=HEADERS, data=readFileGenerator(AUDIO_FILENAME))
+        UPLOAD, headers=HEADERS, data=readFileGenerator(filename))
     uploadRes = uploadRes.json()
 
     stage(1)
@@ -108,8 +107,36 @@ def printProgressBar(i, total, stage):
         print()
 
 
+def printHelp():
+    print("e - transcribe existing recording")
+    print("n - record new speech")
+    print("q - quit")
+    print("h - print this help")
+    print("c - clear")
+
+
+def main():
+    choice = input()
+    if (choice == "h"):
+        printHelp()
+    elif (choice == "c"):
+        print("\033[H\033[J", end="")
+    elif (choice == "e"):
+        filename = input("Enter the name of the file to transcribe: ")
+
+        transcribe(filename)
+    elif (choice == "n"):
+        time = input("Enter time of your speech: ")
+        time = int(time) if time.isdecimal() else main()
+        filename = input("Enter the name of a new file (add .wav): ")
+
+        listenAudio(time, filename)
+    elif (choice == "q"):
+        quit()
+    main()
+
+
 if __name__ == "__main__":
-    time = input("Enter time of your speech: ")
-    time = int(time) if time.isdecimal() else quit()
-    listenAudio(time)
-    transcribe()
+    print("Transcription program")
+    print("Press h for help")
+    main()
